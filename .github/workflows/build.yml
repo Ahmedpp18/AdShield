@@ -34,11 +34,17 @@ jobs:
           fi
 
           if [ -z "$SRC_FILE" ]; then
-            echo "ERROR: لم يتم العثور على ملف MainActivity.kt!"
+            echo "ERROR: لم يتم العثور على ملف MainActivity.kt في المستودع!"
             exit 1
           fi
 
           sed '/^```/d' "$SRC_FILE" > app/src/main/java/com/adshield/app/MainActivity.kt
+
+          # التأكد من أن الكود نُسخ بالكامل من البداية إلى النهاية
+          if ! grep -q "FiltersManagementScreen" app/src/main/java/com/adshield/app/MainActivity.kt; then
+            echo "ERROR: ملف MainActivity.kt غير مكتمل! يرجى التأكد من نسخ الكود كاملاً حتى السطر الأخير."
+            exit 1
+          fi
 
           cat << 'EOF' > settings.gradle.kts
           pluginManagement {
@@ -68,7 +74,7 @@ jobs:
           EOF
 
           cat << 'EOF' > gradle.properties
-          org.gradle.jvmargs=-Xmx2048m -Dfile.encoding=UTF-8
+          org.gradle.jvmargs=-Xmx4096m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8
           android.useAndroidX=true
           kotlin.code.style=official
           android.nonTransitiveRClass=true
@@ -148,7 +154,7 @@ jobs:
           gradle-version: '8.7'
 
       - name: Build Debug APK
-        run: gradle assembleDebug --stacktrace
+        run: gradle assembleDebug --no-daemon --console=plain
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
